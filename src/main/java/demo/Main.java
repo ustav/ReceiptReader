@@ -13,19 +13,23 @@ public class Main {
     public static void main(String[] args) throws InterruptedException {
         System.loadLibrary("opencv_java420");
 
-        String filename = "pics/receipt4.jpg";
-        Mat prepared = new ImagePreparator().getPreparedImage(filename);
+//        String filename = "pics/receipt5.jpg";
+//        Mat prepared = new ImagePreparator().getPreparedImage(filename);
 
 //        Core.rotate(prepared, prepared, Core.ROTATE_90_CLOCKWISE);
 
-        imshow("prepared", prepared);
-        resizeWindow("prepared", 1200, 1200);
+//        imshow("prepared", prepared);
+//        resizeWindow("prepared", 1200, 1200);
 
-        new TextExtractor().extractText(prepared);
-        waitKey();
+//        new TextExtractor().extractText(prepared);
+
+        new  FeatureDetector().matchFeatures();
 
         //==============================
-        HighGui.destroyAllWindows();
+        if (windows.size() > 0) {
+            waitKey();
+            destroyAllWindows();
+        }
         System.exit(0);
     }
 }

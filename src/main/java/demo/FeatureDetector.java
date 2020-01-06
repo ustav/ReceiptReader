@@ -2,16 +2,21 @@ package demo;
 
 import org.opencv.core.*;
 import org.opencv.features2d.BFMatcher;
+import org.opencv.features2d.DescriptorMatcher;
+import org.opencv.features2d.Features2d;
 import org.opencv.features2d.ORB;
 import org.opencv.highgui.HighGui;
+import org.opencv.xfeatures2d.SURF;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static java.lang.Math.PI;
 import static java.lang.Math.atan2;
-import static org.opencv.core.Core.NORM_HAMMING;
-import static org.opencv.core.Core.bitwise_not;
+import static org.opencv.core.Core.*;
 import static org.opencv.core.CvType.CV_8UC1;
+import static org.opencv.features2d.Features2d.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS;
 import static org.opencv.features2d.Features2d.drawMatches;
 import static org.opencv.highgui.HighGui.imshow;
 import static org.opencv.imgcodecs.Imgcodecs.*;
@@ -23,7 +28,7 @@ public class FeatureDetector {
         String logoFilename = "pics/jumbo_logo1.jpg";
         Mat logo = imread(logoFilename, IMREAD_GRAYSCALE);
 
-        String receiptFilename = "pics/receipt4.jpg";
+        String receiptFilename = "pics/receipt5.jpg";
         Mat receipt = imread(receiptFilename, IMREAD_REDUCED_GRAYSCALE_8);
         imshow("receipt", receipt);
 
@@ -47,7 +52,7 @@ public class FeatureDetector {
 
         Mat lines = new Mat();
 
-        HoughLinesP(binary, lines, 1, PI  /180, 100, size.width / 4.f, 20);
+        HoughLinesP(binary, lines, 1, PI / 180, 100, size.width / 4.f, 20);
 
         Mat disp_lines = new Mat(size, CV_8UC1, new Scalar(0, 0, 0));
         double angle = 0.;
@@ -64,89 +69,51 @@ public class FeatureDetector {
         imshow("lines", scene);
     }
 
-    private void templateDetection(Mat scene, Mat object) {
-        Mat result = new Mat();
-        int result_cols = scene.cols() - object.cols() + 1;
-        int result_rows = scene.rows() - object.rows() + 1;
-        result.create(result_rows, result_cols, CvType.CV_32FC1);
+    public void matchFeatures() {
+        String logoFilename = "pics/jumbo_logo1.jpg";
+        Mat logo = imread(logoFilename, IMREAD_GRAYSCALE);
+//        imshow("logo", logo);
 
-        int matchMethod = TM_CCOEFF_NORMED;
+        String receiptFilename = "pics/receipt6.jpg";
+        Mat receipt = imread(receiptFilename, IMREAD_REDUCED_GRAYSCALE_4);
+        rotate(receipt, receipt, ROTATE_180);
+//        imshow("receipt", receipt);
 
-        matchTemplate(scene, object, result, matchMethod);
+        SURF surf = SURF.create();
 
-        Core.normalize(result, result, 0, 1, Core.NORM_MINMAX, -1, new Mat());
-
-        Point matchLoc;
-
-        Core.MinMaxLocResult mmr = Core.minMaxLoc(result);
-        if (matchMethod == TM_SQDIFF || matchMethod == TM_SQDIFF_NORMED) {
-            matchLoc = mmr.minLoc;
-        } else {
-            matchLoc = mmr.maxLoc;
-        }
-
-        Mat img_display = new Mat();
-        scene.copyTo(img_display);
-
-        System.out.println(result);
-
-        rectangle(img_display, matchLoc, new Point(matchLoc.x + object.cols(), matchLoc.y + object.rows()),
-                new Scalar(0, 255, 0), 2, 8, 0);
-        rectangle(result, matchLoc, new Point(matchLoc.x + object.cols(), matchLoc.y + object.rows()),
-                new Scalar(255, 0, 0), 2, 8, 0);
-
-        imshow("img_display", img_display);
-
-        result.convertTo(result, CV_8UC1, 255.0);
-        imshow("result", result);
-
-//        imshow("logo", object);
-//        imshow("receipt", scene);
-        HighGui.resizeWindow("result", 1000, 1000);
-        HighGui.resizeWindow("img_display", 1000, 1000);
-    }
-
-    private void matcher(Mat scene, Mat object) {
-        // Initiate SIFT detector
-        ORB orb = ORB.create();
-
-        // find the keypoints and descriptors with SIFT
         Mat logoMask = new Mat();
         MatOfKeyPoint logoKeypoints = new MatOfKeyPoint();
         Mat logoDescriptors = new Mat();
-        orb.detectAndCompute(object, logoMask, logoKeypoints, logoDescriptors);
+        surf.detectAndCompute(logo, logoMask, logoKeypoints, logoDescriptors);
 
         Mat receiptMask = new Mat();
         MatOfKeyPoint receiptKeypoints = new MatOfKeyPoint();
         Mat receiptDescriptors = new Mat();
-        orb.detectAndCompute(scene, receiptMask, receiptKeypoints, receiptDescriptors);
+        surf.detectAndCompute(receipt, receiptMask, receiptKeypoints, receiptDescriptors);
 
-//        imshow("logoMask", logoMask);
-//        imshow("logoDescriptors", logoDescriptors);
-//        imshow("receiptMask", receiptMask);
-//        imshow("receiptDescriptors", receiptDescriptors);
-
-
-        // create BFMatcher object
-        BFMatcher matcher = BFMatcher.create(NORM_HAMMING, true);
-//
         // Match descriptors.
-        MatOfDMatch matches = new MatOfDMatch();
-        matcher.match(logoDescriptors, receiptDescriptors, matches);
+        DescriptorMatcher matcher = DescriptorMatcher.create(DescriptorMatcher.FLANNBASED);
+        List<MatOfDMatch> knnMatches = new ArrayList<>();
+        matcher.knnMatch(logoDescriptors, receiptDescriptors, knnMatches, 2);
 
-        // Sort them in the order of their distance.
-        DMatch[] matchesArray = matches.toArray();
-        Arrays.sort(matchesArray, (o1, o2) -> Float.compare(o1.distance, o2.distance));
-
-        if (matchesArray.length > 0) {
-            // Draw first 10 matches.
-            Mat matchesImage = new Mat();
-            drawMatches(object, logoKeypoints, scene, receiptKeypoints, new MatOfDMatch(Arrays.copyOfRange(matchesArray, 0, matchesArray.length > 9 ? 9 : 0)), matchesImage, new Scalar(255, 0, 255));
-
-            imshow("matchesImage", matchesImage);
-            HighGui.resizeWindow("matchesImage", 1000, 1000);
+        //-- Filter matches using the Lowe's ratio test
+        float ratioThresh = 0.7f;
+        List<DMatch> listOfGoodMatches = new ArrayList<>();
+        for (MatOfDMatch knnMatch : knnMatches) {
+            if (knnMatch.rows() > 1) {
+                DMatch[] matches = knnMatch.toArray();
+                if (matches[0].distance < ratioThresh * matches[1].distance) {
+                    listOfGoodMatches.add(matches[0]);
+                }
+            }
         }
-
+        MatOfDMatch goodMatches = new MatOfDMatch();
+        goodMatches.fromList(listOfGoodMatches);
+        //-- Draw matches
+        Mat imgMatches = new Mat();
+        drawMatches(logo, logoKeypoints, receipt, receiptKeypoints, goodMatches, imgMatches, Scalar.all(-1),
+                Scalar.all(-1), new MatOfByte(), DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS);
+        //-- Show detected matches
+        HighGui.imshow("Good Matches", imgMatches);
     }
-
 }
