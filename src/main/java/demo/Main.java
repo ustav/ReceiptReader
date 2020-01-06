@@ -23,7 +23,9 @@ public class Main {
 
 //        new TextExtractor().extractText(prepared);
 
-        new  FeatureDetector().matchFeatures();
+//        new  FeatureDetector().matchFeatures();
+
+        new EASTTextDetector().detect();
 
         //==============================
         if (windows.size() > 0) {
