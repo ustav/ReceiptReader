@@ -3,9 +3,10 @@ package demo;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.highgui.HighGui;
+import org.opencv.imgproc.Imgproc;
 
-import static org.opencv.highgui.HighGui.imshow;
-import static org.opencv.highgui.HighGui.waitKey;
+import static org.opencv.highgui.HighGui.*;
+import static org.opencv.imgproc.Imgproc.threshold;
 
 public class Main {
 
@@ -14,9 +15,13 @@ public class Main {
 
         String filename = "pics/receipt4.jpg";
         Mat prepared = new ImagePreparator().getPreparedImage(filename);
-        imshow("prepared", prepared);
 
-//        new FeatureDetector().getRotation();
+//        Core.rotate(prepared, prepared, Core.ROTATE_90_CLOCKWISE);
+
+        imshow("prepared", prepared);
+        resizeWindow("prepared", 1200, 1200);
+
+        new TextExtractor().extractText(prepared);
         waitKey();
 
         //==============================

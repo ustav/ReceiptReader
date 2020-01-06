@@ -1,30 +1,17 @@
 package demo;
 
-import com.recognition.software.jdeskew.ImageDeskew;
-import com.sun.jna.ptr.PointerByReference;
-import net.sourceforge.lept4j.Leptonica;
-import net.sourceforge.lept4j.Pix;
-import net.sourceforge.tess4j.ITessAPI;
-import net.sourceforge.tess4j.TessAPI;
-import net.sourceforge.tess4j.TessAPI1;
 import org.opencv.core.*;
 import org.opencv.features2d.BFMatcher;
 import org.opencv.features2d.ORB;
-import org.opencv.features2d.SimpleBlobDetector;
 import org.opencv.highgui.HighGui;
 
-import java.awt.image.BufferedImage;
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
 import java.util.Arrays;
-import java.util.List;
 
 import static java.lang.Math.PI;
 import static java.lang.Math.atan2;
-import static net.sourceforge.tess4j.ITessAPI.TRUE;
 import static org.opencv.core.Core.NORM_HAMMING;
 import static org.opencv.core.Core.bitwise_not;
-import static org.opencv.core.CvType.*;
+import static org.opencv.core.CvType.CV_8UC1;
 import static org.opencv.features2d.Features2d.drawMatches;
 import static org.opencv.highgui.HighGui.imshow;
 import static org.opencv.imgcodecs.Imgcodecs.*;
@@ -38,35 +25,12 @@ public class FeatureDetector {
 
         String receiptFilename = "pics/receipt4.jpg";
         Mat receipt = imread(receiptFilename, IMREAD_REDUCED_GRAYSCALE_8);
-
-//        ImageDeskew deskew = new ImageDeskew((BufferedImage) HighGui.toBufferedImage(receipt));
-//        System.out.println(deskew.getSkewAngle());
-
         imshow("receipt", receipt);
 
 //        Leptonica leptInstance = Leptonica.INSTANCE;
 //        Pix pix = leptInstance.pixRead(receiptFilename);
 //        int angle = detectOrientation(pix);
 //        System.out.println(angle);
-
-        return 0;
-    }
-
-    public int detectOrientation(Pix srcPix) {
-        ITessAPI.TessBaseAPI handle = TessAPI1.TessBaseAPICreate();
-        TessAPI1.TessBaseAPIInit3(handle, "tessdata", "osd");
-        TessAPI1.TessBaseAPISetImage2(handle, srcPix);
-        IntBuffer orientDegB = IntBuffer.allocate(1);
-        FloatBuffer orientConfB = FloatBuffer.allocate(1);
-        PointerByReference scriptNameB = new PointerByReference();
-        FloatBuffer scriptConfB = FloatBuffer.allocate(1);
-        int result = TessAPI1
-                .TessBaseAPIDetectOrientationScript(handle, orientDegB, orientConfB, scriptNameB,
-                        scriptConfB);
-        if (result == TRUE) {
-            int angle = orientDegB.get();
-            return angle;
-        }
 
         return 0;
     }

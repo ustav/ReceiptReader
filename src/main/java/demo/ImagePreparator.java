@@ -9,15 +9,14 @@ import java.util.List;
 import static org.opencv.core.CvType.CV_8UC1;
 import static org.opencv.core.CvType.CV_8UC3;
 import static org.opencv.highgui.HighGui.imshow;
-import static org.opencv.imgcodecs.Imgcodecs.IMREAD_REDUCED_COLOR_4;
-import static org.opencv.imgcodecs.Imgcodecs.imread;
+import static org.opencv.imgcodecs.Imgcodecs.*;
 import static org.opencv.imgproc.Imgproc.*;
 
 public class ImagePreparator {
 
     private Mat getSourceImage(String filename) {
-        Mat source = imread(filename, IMREAD_REDUCED_COLOR_4);
-        imshow("source", source);
+        Mat source = imread(filename, IMREAD_COLOR);
+//        imshow("source", source);
         return source;
     }
 
@@ -62,11 +61,11 @@ public class ImagePreparator {
 
         Mat gray = new Mat();
         cvtColor(resized, gray, COLOR_BGR2GRAY);
-        imshow("gray", gray);
+//        imshow("gray", gray);
 
         Mat blurred = new Mat();
-        GaussianBlur(gray, blurred, new Size(7, 7), 3, 3);
-        imshow("blurred", blurred);
+        GaussianBlur(gray, blurred, new Size(5, 5), 0);
+//        imshow("blurred", blurred);
 
         // The #BORDER_REPLICATE | #BORDER_ISOLATED
         // #THRESH_BINARY or #THRESH_BINARY_INV,
@@ -74,7 +73,7 @@ public class ImagePreparator {
 
         Mat threshold = new Mat();
         threshold(blurred, threshold, 80, 255, Imgproc.THRESH_BINARY);
-        imshow("thr", threshold);
+//        imshow("thr", threshold);
         return threshold;
     }
 
@@ -154,8 +153,6 @@ public class ImagePreparator {
             Mat cropped = new Mat(transformed, boundRect);
             Mat croppedGrey = new Mat();
             cvtColor(cropped, croppedGrey, COLOR_BGR2GRAY);
-//            Core.rotate(croppedGrey, croppedGrey, Core.ROTATE_90_CLOCKWISE);
-
             return croppedGrey;
         }
 
