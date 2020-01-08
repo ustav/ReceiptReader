@@ -161,8 +161,8 @@ public class ImagePreparator {
 
     private MatOfPoint2f scalePolygon(MatOfPoint2f polygon, double scale) {
         List<Point> newPoints = new ArrayList<>();
-        polygon.toList().forEach(point -> newPoints.add(new Point(point.x * scale, point.y*scale)));
-        return new MatOfPoint2f((Point[]) newPoints.toArray(new Point[newPoints.size()]));
+        polygon.toList().forEach(point -> newPoints.add(new Point(point.x * scale, point.y * scale)));
+        return new MatOfPoint2f(newPoints.toArray(new Point[newPoints.size()]));
     }
 
     public Mat getPreparedImage(String filename) {
