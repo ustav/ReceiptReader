@@ -1,48 +1,27 @@
 package demo;
 
 import org.opencv.core.*;
-import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.opencv.core.CvType.CV_8UC1;
+import static org.opencv.core.CvType.CV_8U;
 import static org.opencv.core.CvType.CV_8UC3;
-import static org.opencv.highgui.HighGui.imshow;
-import static org.opencv.imgcodecs.Imgcodecs.*;
+import static org.opencv.core.Mat.ones;
+import static org.opencv.imgcodecs.Imgcodecs.IMREAD_REDUCED_COLOR_2;
+import static org.opencv.imgcodecs.Imgcodecs.imread;
 import static org.opencv.imgproc.Imgproc.*;
 
 public class ImagePreparator {
 
     private Mat getSourceImage(String filename) {
-        Mat source = imread(filename, IMREAD_COLOR);
+        Mat source = imread(filename, IMREAD_REDUCED_COLOR_2);
 //        imshow("source", source);
+
         return source;
     }
 
     private Mat getBinaryImage(Mat originalImage) {
-
-        //        Mat blurred = new Mat();
-//        Imgproc.boxFilter(source, blurred, -1, new Size(10d, 10d));
-//        imshow("blurred", blurred);
-
-
-        //        Mat hls = new Mat();
-//        Imgproc.cvtColor(source, hls, COLOR_BGR2HLS);
-//
-//        Scalar lowerWhite = new Scalar(0,0,120);
-//        Scalar upperWhite = new Scalar(172,255,255);
-//
-//        Mat mask = new Mat();
-//        inRange(hls, lowerWhite, upperWhite, mask);
-//
-//        Mat result = new Mat();
-//        Core.bitwise_and(source, source, result, mask);
-//
-//        imshow("hls", hls);
-//        imshow("mask", mask);
-//        imshow("result", result);
-
         Size originalSize = originalImage.size();
 
         double aspectRatio = originalSize.width / originalSize.height;
@@ -63,18 +42,21 @@ public class ImagePreparator {
         cvtColor(resized, gray, COLOR_BGR2GRAY);
 //        imshow("gray", gray);
 
+
         Mat blurred = new Mat();
         GaussianBlur(gray, blurred, new Size(5, 5), 0);
 //        imshow("blurred", blurred);
 
-        // The #BORDER_REPLICATE | #BORDER_ISOLATED
-        // #THRESH_BINARY or #THRESH_BINARY_INV,
-//        adaptiveThreshold(gray, threshold, 255, BORDER_REPLICATE, THRESH_BINARY_INV, 7, 7);
+        Mat canny = new Mat();
+        Canny(blurred, canny, 50, 255);
+//        imshow("canny", canny);
 
-        Mat threshold = new Mat();
-        threshold(blurred, threshold, 80, 255, Imgproc.THRESH_BINARY);
-//        imshow("thr", threshold);
-        return threshold;
+        Mat kernel = ones(3, 3, CV_8U);
+        Mat closing = new Mat();
+        morphologyEx(canny, closing, MORPH_DILATE, kernel);
+//        imshow("closing", closing);
+
+        return closing;
     }
 
     private List<MatOfPoint> detectContours(Mat binaryImage) {
@@ -86,6 +68,10 @@ public class ImagePreparator {
     }
 
     private MatOfPoint2f detectPolygon(List<MatOfPoint> contours) {
+        if (contours.isEmpty()) {
+            return new MatOfPoint2f();
+        }
+
         int largestContourIndex = 0;
         double largestArea = 0;
         for (int i = 0; i < contours.size(); i++) {
@@ -100,7 +86,8 @@ public class ImagePreparator {
         contours.get(largestContourIndex).convertTo(largestPolygon, CvType.CV_32FC2);
 
         MatOfPoint2f contoursPolygon = new MatOfPoint2f();
-        approxPolyDP(largestPolygon, contoursPolygon, 100, true);
+        double perimeter = arcLength(largestPolygon, true);
+        approxPolyDP(largestPolygon, contoursPolygon, perimeter * 0.04, true);
         return contoursPolygon;
     }
 
@@ -126,15 +113,37 @@ public class ImagePreparator {
     private Mat cropPolygon(Mat image, MatOfPoint2f polygon) {
         Point[] contourPoints = polygon.toArray();
 
+        for (Point point : contourPoints) {
+            circle(image, point, 10, new Scalar(0, 255, 0), 5);
+        }
+
         if (contourPoints.length == 4) {
+            Rect boundRect = boundingRect(polygon);
+            Point center = new Point(boundRect.x + (double) boundRect.width / 2, boundRect.y + (double) boundRect.height / 2);
+//            circle(image, center, 20, new Scalar(0, 255, 0), 5);
+
+            Point leftTop = null;
+            Point rightTop = null;
+            Point leftBotton = null;
+            Point rightBottom = null;
+            for (Point point : contourPoints) {
+                if (point.x < center.x && point.y < center.y)  leftTop = point;
+                if (point.x < center.x && point.y > center.y)  rightTop = point;
+                if (point.x > center.x && point.y > center.y)  leftBotton = point;
+                if (point.x > center.x && point.y < center.y)  rightBottom = point;
+            }
+
+            if (leftTop == null || rightTop== null || leftBotton == null || rightBottom == null) {
+                return image;
+            }
+
             MatOfPoint2f quad = new MatOfPoint2f(
-                    contourPoints[0],
-                    contourPoints[1],
-                    contourPoints[3],
-                    contourPoints[2]
+                    leftTop,
+                    rightTop,
+                    rightBottom,
+                    leftBotton
             );
 
-            Rect boundRect = boundingRect(polygon);
             MatOfPoint2f square = new MatOfPoint2f(
                     new Point(boundRect.x, boundRect.y),
                     new Point(boundRect.x, boundRect.y + boundRect.height),
@@ -144,6 +153,8 @@ public class ImagePreparator {
 
             Mat transformationMatrix = getPerspectiveTransform(quad, square);
             Mat transformed = Mat.zeros(image.rows(), image.cols(), CV_8UC3);
+
+//            imshow("transformed", transformed);
             warpPerspective(image, transformed, transformationMatrix, image.size());
 
             drawPolygon(image, contourPoints);
@@ -151,6 +162,8 @@ public class ImagePreparator {
             drawRect(transformed, boundRect);
 
             Mat cropped = new Mat(transformed, boundRect);
+//            imshow("cropped", cropped);
+
             Mat croppedGrey = new Mat();
             cvtColor(cropped, croppedGrey, COLOR_BGR2GRAY);
             return croppedGrey;

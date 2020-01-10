@@ -10,10 +10,10 @@ import static org.opencv.imgproc.Imgproc.threshold;
 
 public class Main {
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         System.loadLibrary("opencv_java420");
 
-//        String filename = "pics/receipt5.jpg";
+//        String filename = "pics/jumbo2.jpg";
 //        Mat prepared = new ImagePreparator().getPreparedImage(filename);
 
 //        Core.rotate(prepared, prepared, Core.ROTATE_90_CLOCKWISE);
@@ -21,11 +21,13 @@ public class Main {
 //        imshow("prepared", prepared);
 //        resizeWindow("prepared", 1200, 1200);
 
-//        new TextExtractor().extractText(prepared);
+//        new TextExtractor().extractText(prepared) ;
 
-        new  FeatureDetector().matchFeatures();
+//        new  FeatureDetector().matchFeatures();
 
 //        new EASTTextDetector().detect();
+
+        new JumboReader().readReceipt();
 
         //==============================
         if (windows.size() > 0) {

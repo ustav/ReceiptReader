@@ -1,9 +1,10 @@
 package demo;
 
+import org.opencv.calib3d.Calib3d;
 import org.opencv.core.*;
 import org.opencv.features2d.DescriptorMatcher;
+import org.opencv.features2d.Features2d;
 import org.opencv.highgui.HighGui;
-import org.opencv.imgproc.Imgproc;
 import org.opencv.xfeatures2d.SURF;
 
 import java.util.ArrayList;
@@ -12,89 +13,14 @@ import java.util.List;
 import static java.lang.Math.PI;
 import static java.lang.Math.atan2;
 import static org.opencv.calib3d.Calib3d.RANSAC;
-import static org.opencv.calib3d.Calib3d.findHomography;
-import static org.opencv.core.Core.*;
-import static org.opencv.core.CvType.CV_8UC1;
+import static org.opencv.core.Core.perspectiveTransform;
 import static org.opencv.features2d.Features2d.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS;
-import static org.opencv.features2d.Features2d.drawMatches;
-import static org.opencv.highgui.HighGui.imshow;
-import static org.opencv.imgcodecs.Imgcodecs.*;
-import static org.opencv.imgproc.Imgproc.*;
+import static org.opencv.highgui.HighGui.resizeWindow;
+import static org.opencv.imgproc.Imgproc.line;
 
 public class FeatureDetector {
 
-    public int getRotation() {
-        String logoFilename = "pics/jumbo_logo1.jpg";
-        Mat logo = imread(logoFilename, IMREAD_GRAYSCALE);
-
-        String receiptFilename = "pics/receipt5.jpg";
-        Mat receipt = imread(receiptFilename, IMREAD_REDUCED_GRAYSCALE_8);
-        imshow("receipt", receipt);
-
-//        Leptonica leptInstance = Leptonica.INSTANCE;
-//        Pix pix = leptInstance.pixRead(receiptFilename);
-//        int angle = detectOrientation(pix);
-//        System.out.println(angle);
-
-        return 0;
-    }
-
-    private void computeSkew(Mat scene) {
-        Size size = scene.size();
-
-        Mat negative = new Mat();
-        bitwise_not(scene, negative);
-
-        Mat binary = new Mat();
-        threshold(negative, binary, 0, 255,
-                THRESH_BINARY | THRESH_OTSU);
-
-        Mat lines = new Mat();
-
-        HoughLinesP(binary, lines, 1, PI / 180, 100, size.width / 4.f, 20);
-
-        Mat disp_lines = new Mat(size, CV_8UC1, new Scalar(0, 0, 0));
-        double angle = 0.;
-        int nb_lines = lines.rows();
-        for (int i = 0; i < nb_lines / 10; ++i) {
-            double[] line = lines.get(i, 0);
-            line(disp_lines, new Point(line[0], line[1]), new Point(line[2], line[3]), new Scalar(255, 0, 255), 2);
-            angle += atan2(line[3] - line[1], line[2] - line[0]);
-        }
-        angle /= nb_lines; // mean angle, in radians.
-
-        System.out.println(angle * 180 / PI);
-
-        imshow("lines", scene);
-    }
-
-    public void matchFeatures() {
-        String logoFilename = "pics/jumbo_logo1.jpg";
-        Mat logo = imread(logoFilename, IMREAD_GRAYSCALE);
-//        imshow("logo", logo);
-
-        String receiptFilename = "pics/receipt6.jpg";
-        Mat receipt = imread(receiptFilename, IMREAD_REDUCED_GRAYSCALE_4);
-        rotate(receipt, receipt, ROTATE_90_COUNTERCLOCKWISE);
-//        imshow("receipt", receipt);
-
-        SURF surf = SURF.create();
-
-        Mat logoMask = new Mat();
-        MatOfKeyPoint logoKeypoints = new MatOfKeyPoint();
-        Mat logoDescriptors = new Mat();
-        surf.detectAndCompute(logo, logoMask, logoKeypoints, logoDescriptors);
-
-        Mat receiptMask = new Mat();
-        MatOfKeyPoint receiptKeypoints = new MatOfKeyPoint();
-        Mat receiptDescriptors = new Mat();
-        surf.detectAndCompute(receipt, receiptMask, receiptKeypoints, receiptDescriptors);
-
-        // Match descriptors.
-        DescriptorMatcher matcher = DescriptorMatcher.create(DescriptorMatcher.FLANNBASED);
-        List<MatOfDMatch> knnMatches = new ArrayList<>();
-        matcher.knnMatch(logoDescriptors, receiptDescriptors, knnMatches, 2);
-
+    private List<DMatch> filterMatches(List<MatOfDMatch> knnMatches) {
         //-- Filter matches using the Lowe's ratio test
         float ratioThresh = 0.75f;
         List<DMatch> listOfGoodMatches = new ArrayList<>();
@@ -106,71 +32,128 @@ public class FeatureDetector {
                 }
             }
         }
-        MatOfDMatch goodMatches = new MatOfDMatch();
-        goodMatches.fromList(listOfGoodMatches);
-        //-- Draw matches
-        Mat imgMatches = new Mat();
-        drawMatches(logo, logoKeypoints, receipt, receiptKeypoints, goodMatches, imgMatches, Scalar.all(-1),
-                Scalar.all(-1), new MatOfByte(), DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS);
+        return listOfGoodMatches;
+    }
 
+    public MatchResult findMatches(Mat object, Mat scene) {
+        SURF surf = SURF.create();
+
+        Mat objectMask = new Mat();
+        MatOfKeyPoint objectKeypoints = new MatOfKeyPoint();
+        Mat objectDescriptors = new Mat();
+        surf.detectAndCompute(object, objectMask, objectKeypoints, objectDescriptors);
+
+        Mat sceneMask = new Mat();
+        MatOfKeyPoint sceneKeypoints = new MatOfKeyPoint();
+        Mat sceneDescriptors = new Mat();
+        surf.detectAndCompute(scene, sceneMask, sceneKeypoints, sceneDescriptors);
+
+        // Match descriptors.
+        DescriptorMatcher matcher = DescriptorMatcher.create(DescriptorMatcher.FLANNBASED);
+        List<MatOfDMatch> knnMatches = new ArrayList<>();
+        matcher.knnMatch(objectDescriptors, sceneDescriptors, knnMatches, 2);
+
+        List<DMatch> listOfGoodMatches = filterMatches(knnMatches);
+        return new MatchResult(listOfGoodMatches, objectKeypoints, sceneKeypoints);
+    }
+
+    private void drawMatches(Mat object, Mat scene, Mat destination, MatchResult matchResult) {
+        MatOfDMatch goodMatches = new MatOfDMatch();
+        goodMatches.fromList(matchResult.matches);
+        //-- Draw matches
+        Features2d.drawMatches(object, matchResult.objectKeypoints, scene, matchResult.sceneKeypoints, goodMatches, destination, Scalar.all(-1),
+                Scalar.all(-1), new MatOfByte(), DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS);
+    }
+
+    private Mat findHomography(MatchResult matchResult ) {
         //-- Localize the object
-        List<Point> obj = new ArrayList<>();
-        List<Point> scene = new ArrayList<>();
-        List<KeyPoint> listOfKeypointsObject = logoKeypoints.toList();
-        List<KeyPoint> listOfKeypointsScene = receiptKeypoints.toList();
-        for (int i = 0; i < listOfGoodMatches.size(); i++) {
+        List<Point> objectPoints = new ArrayList<>();
+        List<Point> scenePoints = new ArrayList<>();
+        List<KeyPoint> objectKeypoints = matchResult.objectKeypoints.toList();
+        List<KeyPoint> sceneKeypoints = matchResult.sceneKeypoints.toList();
+        for (DMatch goodMatch : matchResult.matches) {
             //-- Get the keypoints from the good matches
-            obj.add(listOfKeypointsObject.get(listOfGoodMatches.get(i).queryIdx).pt);
-            scene.add(listOfKeypointsScene.get(listOfGoodMatches.get(i).trainIdx).pt);
+            objectPoints.add(objectKeypoints.get(goodMatch.queryIdx).pt);
+            scenePoints.add(sceneKeypoints.get(goodMatch.trainIdx).pt);
         }
         MatOfPoint2f objMat = new MatOfPoint2f();
         MatOfPoint2f sceneMat = new MatOfPoint2f();
-        objMat.fromList(obj);
-        sceneMat.fromList(scene);
+        objMat.fromList(objectPoints);
+        sceneMat.fromList(scenePoints);
         double ransacReprojThreshold = 3.0;
-        Mat H = findHomography(objMat, sceneMat, RANSAC, ransacReprojThreshold);
+        return Calib3d.findHomography(objMat, sceneMat, RANSAC, ransacReprojThreshold);
+    }
 
-        //-- Get the corners from the image_1 ( the object to be "detected" )
-        Mat objCorners = new Mat(4, 1, CvType.CV_32FC2);
+    private Point getVectorFromCornersData(float[] cornersData) {
+        double vectorX = cornersData[2] - cornersData[0];
+        double vectorY = cornersData[3] - cornersData[1];
+        return new Point(vectorX, vectorY);
+    }
+
+    private double calculateAngleBetweenVectors(Point vectorA, Point vectorB) {
+        double dot = vectorA.x * vectorB.x + vectorA.y * vectorB.y;
+        double det = vectorA.x * vectorB.y - vectorA.y * vectorB.x;
+        return atan2(det, dot) * 180 / PI;
+    }
+
+    private void drawObjectOutline(Mat destination, float[] sceneCornersData, int sceneWidth) {
+        Scalar lineColor = new Scalar(0, 255, 0);
+        int lineThickness = 4;
+
+        //-- Draw lines between the corners (the mapped object in the scene )
+        line(destination, new Point(sceneCornersData[0] + sceneWidth, sceneCornersData[1]), new Point(sceneCornersData[2] + sceneWidth, sceneCornersData[3]), lineColor, lineThickness);
+        line(destination, new Point(sceneCornersData[2] + sceneWidth, sceneCornersData[3]), new Point(sceneCornersData[4] + sceneWidth, sceneCornersData[5]), lineColor, lineThickness);
+        line(destination, new Point(sceneCornersData[4] + sceneWidth, sceneCornersData[5]), new Point(sceneCornersData[6] + sceneWidth, sceneCornersData[7]), lineColor, lineThickness);
+        line(destination, new Point(sceneCornersData[6] + sceneWidth, sceneCornersData[7]), new Point(sceneCornersData[0] + sceneWidth, sceneCornersData[1]), lineColor, lineThickness);
+    }
+
+    private Mat getObjectCorners(Mat object) {
+        //-- Get the corners from the the object to be "detected"
+        Mat objectCorners = new Mat(4, 1, CvType.CV_32FC2);
+        float[] objectCornersData = new float[(int) (objectCorners.total() * objectCorners.channels())];
+        objectCorners.get(0, 0, objectCornersData);
+        objectCornersData[0] = 0;
+        objectCornersData[1] = 0;
+        objectCornersData[2] = object.cols();
+        objectCornersData[3] = 0;
+        objectCornersData[4] = object.cols();
+        objectCornersData[5] = object.rows();
+        objectCornersData[6] = 0;
+        objectCornersData[7] = object.rows();
+        objectCorners.put(0, 0, objectCornersData);
+        return objectCorners;
+    }
+
+    private Mat getSceneCorners(Mat objectCorners, Mat homography) {
         Mat sceneCorners = new Mat();
-        float[] objCornersData = new float[(int) (objCorners.total() * objCorners.channels())];
-        objCorners.get(0, 0, objCornersData);
-        objCornersData[0] = 0;
-        objCornersData[1] = 0;
-        objCornersData[2] = logo.cols();
-        objCornersData[3] = 0;
-        objCornersData[4] = logo.cols();
-        objCornersData[5] = logo.rows();
-        objCornersData[6] = 0;
-        objCornersData[7] = logo.rows();
-        objCorners.put(0, 0, objCornersData);
-        perspectiveTransform(objCorners, sceneCorners, H);
+        perspectiveTransform(objectCorners, sceneCorners, homography);
+        return sceneCorners;
+    }
+
+    public FeatureDetectionResult matchFeatures(Mat object, Mat scene) {
+        MatchResult matchResult = findMatches(object, scene);
+        Mat homography = findHomography(matchResult);
+
+        Mat objectCorners = getObjectCorners(object);
+        float[] objectCornersData = new float[(int) (objectCorners.total() * objectCorners.channels())];
+        objectCorners.get(0, 0, objectCornersData);
+
+        Mat sceneCorners = getSceneCorners(objectCorners, homography);
         float[] sceneCornersData = new float[(int) (sceneCorners.total() * sceneCorners.channels())];
         sceneCorners.get(0, 0, sceneCornersData);
-        //-- Draw lines between the corners (the mapped object in the scene - image_2 )
-        Imgproc.line(imgMatches, new Point(sceneCornersData[0] + logo.cols(), sceneCornersData[1]),
-                new Point(sceneCornersData[2] + logo.cols(), sceneCornersData[3]), new Scalar(0, 255, 0), 4);
-        Imgproc.line(imgMatches, new Point(sceneCornersData[2] + logo.cols(), sceneCornersData[3]),
-                new Point(sceneCornersData[4] + logo.cols(), sceneCornersData[5]), new Scalar(0, 255, 0), 4);
-        Imgproc.line(imgMatches, new Point(sceneCornersData[4] + logo.cols(), sceneCornersData[5]),
-                new Point(sceneCornersData[6] + logo.cols(), sceneCornersData[7]), new Scalar(0, 255, 0), 4);
-        Imgproc.line(imgMatches, new Point(sceneCornersData[6] + logo.cols(), sceneCornersData[7]),
-                new Point(sceneCornersData[0] + logo.cols(), sceneCornersData[1]), new Scalar(0, 255, 0), 4);
 
+        double angle = calculateAngleBetweenVectors(getVectorFromCornersData(objectCornersData), getVectorFromCornersData(sceneCornersData));
+        System.out.println("angle: " + angle);
 
-        float objVecX = objCornersData[2] - objCornersData[0];
-        float objVecY = objCornersData[3] - objCornersData[1];
+        Mat imageWithMatches = new Mat();
+        drawMatches(object, scene, imageWithMatches,  matchResult);
+        drawObjectOutline(imageWithMatches, sceneCornersData, object.cols());
 
-        float sceneVecX = sceneCornersData[2] - sceneCornersData[0];
-        float sceneVecY = sceneCornersData[3] - sceneCornersData[1];
-
-        float dot = objVecX * sceneVecX + objVecY * sceneVecY;
-        float det = objVecX * sceneVecY - objVecY * sceneVecX;
-        double angle = atan2(det, dot);
-
-        System.out.println("angle: " + angle * 180 / PI);
 
         //-- Show detected matches
-        HighGui.imshow("Good Matches", imgMatches);
+//        HighGui.imshow("Good Matches", imageWithMatches);
+//        resizeWindow("Good Matches", 1000, 1000);
+
+        return new FeatureDetectionResult(!matchResult.matches.isEmpty(), angle);
     }
 }
