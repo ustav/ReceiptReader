@@ -27,9 +27,13 @@ public class JumboReader {
     }
 
     public String readReceipt() {
-        String receiptFilename = "pics/jumbo1.jpg";
+        String receiptFilename = "pics/jumbo2.jpg";
         Mat source = imread(receiptFilename, IMREAD_COLOR);
+//        imshow("source", source.clone());
+        resizeWindow("source", 1000, 1000);
         Mat preparedImage = new ImagePreparator().getPreparedImage(source);
+//        imshow("preparedImage", preparedImage.clone());
+//        resizeWindow("preparedImage", 1000, 1000);
 
         String logoFilename = "pics/jumbo_logo1.jpg";
         Mat logo = imread(logoFilename, IMREAD_GRAYSCALE);
@@ -40,7 +44,10 @@ public class JumboReader {
         if (result.matchFound) {
             Mat rotated = rotateImageIfNeeded(preparedImage, result.angle);
             String text = new TextExtractor().extractText(rotated);
-            imshow("rotated", rotated);
+
+            System.out.println(text);
+
+//            imshow("rotated", rotated);
             resizeWindow("rotated", 1200, 1200);
         }
 
