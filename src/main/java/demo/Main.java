@@ -6,6 +6,8 @@ import org.opencv.highgui.HighGui;
 import org.opencv.imgproc.Imgproc;
 
 import static org.opencv.highgui.HighGui.*;
+import static org.opencv.imgcodecs.Imgcodecs.IMREAD_COLOR;
+import static org.opencv.imgcodecs.Imgcodecs.imread;
 import static org.opencv.imgproc.Imgproc.threshold;
 
 public class Main {
@@ -27,7 +29,22 @@ public class Main {
 
 //        new EASTTextDetector().detect();
 
-        new JumboReader().readReceipt();
+        String filename;
+        if (args != null && args.length > 0) {
+            filename = args[0];
+        } else {
+            filename = "pics/jumbo1.jpg";
+        }
+
+        Mat source = imread(filename, IMREAD_COLOR);
+
+        String result = new JumboReader().readReceipt(source);
+
+        if (result != null) {
+            System.out.println(result);
+        } else {
+            System.out.println("{}");
+        }
 
         //==============================
         if (windows.size() > 0) {

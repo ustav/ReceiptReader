@@ -56,7 +56,7 @@ public class TextExtractor {
         BufferedImage bufferedImage = (BufferedImage) toBufferedImage(image);
         ImageDeskew deskew = new ImageDeskew(bufferedImage);
         double angle = deskew.getSkewAngle();
-        System.out.println("Skew Angle: " + angle);
+//        System.out.println("Skew Angle: " + angle);
         return angle;
     }
 
@@ -127,13 +127,13 @@ public class TextExtractor {
                     if (matcher.find()) {
                         total = matcher.group();
                     }
-                    System.out.println(word.getText());
+//                    System.out.println(word.getText());
                 } else if (word.getText().toLowerCase().contains("summe")) {
                     Matcher matcher = pattern.matcher(word.getText());
                     if (matcher.find()) {
                         total = matcher.group();
                     }
-                    System.out.println(word.getText());
+//                    System.out.println(word.getText());
                 }
             }
 
@@ -148,12 +148,13 @@ public class TextExtractor {
         String[] lines = text.split("\\r?\\n");
 
         Pattern pattern = Pattern.compile("\\b\\S*\\d+$");
-        total = total.replace(',','.');
+        total = total.replace(',', '.');
 
+        boolean firstLine = true;
         StringBuilder builder = new StringBuilder();
         builder.append("{\n");
-        builder.append("  total: ").append("\"").append(total).append("\",\n");
-        builder.append("  products: [\n");
+        builder.append("  \"total\": ").append("\"").append(total).append("\",\n");
+        builder.append("  \"products\": [\n");
         int noMatchesCount = 0;
         String lastName = "";
         for (String line : lines) {
@@ -174,10 +175,13 @@ public class TextExtractor {
 
                 lastName = name;
                 noMatchesCount = 0;
+                if (!firstLine) {
+                    builder.append(",\n");
+                }
+
                 builder.append("     { ")
-                        .append("name: ").append("\"").append(name).append("\", ")
-                        .append("price: ").append("\"").append(price).append("\"").append(" },");
-                builder.append("\n");
+                        .append("\"name\": ").append("\"").append(name).append("\", ")
+                        .append("\"price\": ").append("\"").append(price).append("\"").append(" }");
             } else {
                 if (noMatchesCount == 0) {
                     lastName = line;
@@ -186,10 +190,10 @@ public class TextExtractor {
 //                System.out.println("No matches");
                 noMatchesCount++;
             }
+            firstLine = false;
         }
 
-        builder.append("  ]\n");
-        builder.append("}\n");
+        builder.append("\n").append("  ]\n").append("}\n");
         return builder.toString();
     }
 
@@ -197,12 +201,13 @@ public class TextExtractor {
         ITesseract tesseract = new Tesseract();
         tesseract.setLanguage("nld");
         tesseract.setDatapath("data");
+        tesseract.setTessVariable("user_defined_dpi", "270");
 
         TextKeyBlocks keyBlocks = findKeyBlocks(tesseract, image);
 
         try {
             if (keyBlocks != null) {
-                System.out.println("=====================  LIST =========================");
+//                System.out.println("=====================  LIST =========================");
                 String fullText = recognizeCutBlock(tesseract, image, keyBlocks.listRect);
                 return textToJson(fullText, keyBlocks.total);
 //                System.out.println("=====================  GOODS =========================");

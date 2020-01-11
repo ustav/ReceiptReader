@@ -141,7 +141,7 @@ public class FeatureDetector {
         sceneCorners.get(0, 0, sceneCornersData);
 
         double angle = calculateAngleBetweenVectors(getVectorFromCornersData(objectCornersData), getVectorFromCornersData(sceneCornersData));
-        System.out.println("angle: " + angle);
+//        System.out.println("angle: " + angle);
 
         Mat imageWithMatches = new Mat();
         drawMatches(object, scene, imageWithMatches,  matchResult);
