@@ -1,5 +1,7 @@
 package demo;
 
+import org.opencv.core.Mat;
+
 public class FeatureDetectionResult {
     public final boolean matchFound;
     public final double angle;

@@ -4,7 +4,6 @@ import org.opencv.calib3d.Calib3d;
 import org.opencv.core.*;
 import org.opencv.features2d.DescriptorMatcher;
 import org.opencv.features2d.Features2d;
-import org.opencv.highgui.HighGui;
 import org.opencv.xfeatures2d.SURF;
 
 import java.util.ArrayList;
@@ -15,7 +14,6 @@ import static java.lang.Math.atan2;
 import static org.opencv.calib3d.Calib3d.RANSAC;
 import static org.opencv.core.Core.perspectiveTransform;
 import static org.opencv.features2d.Features2d.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS;
-import static org.opencv.highgui.HighGui.resizeWindow;
 import static org.opencv.imgproc.Imgproc.line;
 
 public class FeatureDetector {
@@ -96,15 +94,15 @@ public class FeatureDetector {
         return atan2(det, dot) * 180 / PI;
     }
 
-    private void drawObjectOutline(Mat destination, float[] sceneCornersData, int sceneWidth) {
+    private void drawObjectOutline(Mat destination, float[] sceneCornersData, int offset) {
         Scalar lineColor = new Scalar(0, 255, 0);
         int lineThickness = 4;
 
         //-- Draw lines between the corners (the mapped object in the scene )
-        line(destination, new Point(sceneCornersData[0] + sceneWidth, sceneCornersData[1]), new Point(sceneCornersData[2] + sceneWidth, sceneCornersData[3]), lineColor, lineThickness);
-        line(destination, new Point(sceneCornersData[2] + sceneWidth, sceneCornersData[3]), new Point(sceneCornersData[4] + sceneWidth, sceneCornersData[5]), lineColor, lineThickness);
-        line(destination, new Point(sceneCornersData[4] + sceneWidth, sceneCornersData[5]), new Point(sceneCornersData[6] + sceneWidth, sceneCornersData[7]), lineColor, lineThickness);
-        line(destination, new Point(sceneCornersData[6] + sceneWidth, sceneCornersData[7]), new Point(sceneCornersData[0] + sceneWidth, sceneCornersData[1]), lineColor, lineThickness);
+        line(destination, new Point(sceneCornersData[0] + offset, sceneCornersData[1]), new Point(sceneCornersData[2] + offset, sceneCornersData[3]), lineColor, lineThickness);
+        line(destination, new Point(sceneCornersData[2] + offset, sceneCornersData[3]), new Point(sceneCornersData[4] + offset, sceneCornersData[5]), lineColor, lineThickness);
+        line(destination, new Point(sceneCornersData[4] + offset, sceneCornersData[5]), new Point(sceneCornersData[6] + offset, sceneCornersData[7]), lineColor, lineThickness);
+        line(destination, new Point(sceneCornersData[6] + offset, sceneCornersData[7]), new Point(sceneCornersData[0] + offset, sceneCornersData[1]), lineColor, lineThickness);
     }
 
     private Mat getObjectCorners(Mat object) {

@@ -8,18 +8,9 @@ import java.util.List;
 import static org.opencv.core.CvType.CV_8U;
 import static org.opencv.core.CvType.CV_8UC3;
 import static org.opencv.core.Mat.ones;
-import static org.opencv.imgcodecs.Imgcodecs.IMREAD_REDUCED_COLOR_2;
-import static org.opencv.imgcodecs.Imgcodecs.imread;
 import static org.opencv.imgproc.Imgproc.*;
 
 public class ImagePreparator {
-
-    private Mat getSourceImage(String filename) {
-        Mat source = imread(filename, IMREAD_REDUCED_COLOR_2);
-//        imshow("source", source);
-
-        return source;
-    }
 
     private Mat getBinaryImage(Mat originalImage) {
         Size originalSize = originalImage.size();
@@ -127,13 +118,13 @@ public class ImagePreparator {
             Point leftBotton = null;
             Point rightBottom = null;
             for (Point point : contourPoints) {
-                if (point.x < center.x && point.y < center.y)  leftTop = point;
-                if (point.x < center.x && point.y > center.y)  rightTop = point;
-                if (point.x > center.x && point.y > center.y)  leftBotton = point;
-                if (point.x > center.x && point.y < center.y)  rightBottom = point;
+                if (point.x < center.x && point.y < center.y) leftTop = point;
+                if (point.x < center.x && point.y > center.y) rightTop = point;
+                if (point.x > center.x && point.y > center.y) leftBotton = point;
+                if (point.x > center.x && point.y < center.y) rightBottom = point;
             }
 
-            if (leftTop == null || rightTop== null || leftBotton == null || rightBottom == null) {
+            if (leftTop == null || rightTop == null || leftBotton == null || rightBottom == null) {
                 return image;
             }
 
@@ -164,9 +155,7 @@ public class ImagePreparator {
             Mat cropped = new Mat(transformed, boundRect);
 //            imshow("cropped", cropped);
 
-            Mat croppedGrey = new Mat();
-            cvtColor(cropped, croppedGrey, COLOR_BGR2GRAY);
-            return croppedGrey;
+            return cropped;
         }
 
         return image;
@@ -178,13 +167,30 @@ public class ImagePreparator {
         return new MatOfPoint2f(newPoints.toArray(new Point[newPoints.size()]));
     }
 
-    public Mat getPreparedImage(String filename) {
-        Mat source = getSourceImage(filename);
+    private Mat binarizeCropped(Mat cropped) {
+        Mat result = new Mat();
+        cvtColor(cropped, result, COLOR_BGR2GRAY);
+
+        Mat binary = new Mat();
+//        adaptiveThreshold(result, result, 255, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 25, 16);
+
+//        Canny(croppedGrey, binary, 50, 255);
+        Mat kernel = ones(3, 3, CV_8U);
+        Mat closing = new Mat();
+//        morphologyEx(binary, binary, MORPH_ELLIPSE, kernel);
+
+
+//        threshold(result, result, 100, 255, THRESH_BINARY+THRESH_OTSU);
+        return result;
+    }
+
+    public Mat getPreparedImage(Mat source) {
         Mat binary = getBinaryImage(source);
         List<MatOfPoint> contours = detectContours(binary);
         MatOfPoint2f polygon = detectPolygon(contours);
         double imageScale = source.size().width / binary.size().width;
         MatOfPoint2f scaledPolygon = scalePolygon(polygon, imageScale);
-        return cropPolygon(source, scaledPolygon);
+        Mat cropped = cropPolygon(source, scaledPolygon);
+        return binarizeCropped(cropped);
     }
 }
