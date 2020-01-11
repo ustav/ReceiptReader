@@ -33,7 +33,7 @@ public class Main {
         if (args != null && args.length > 0) {
             filename = args[0];
         } else {
-            filename = "pics/jumbo1.jpg";
+            filename = "pics/jumbo2.jpg";
         }
 
         Mat source = imread(filename, IMREAD_COLOR);

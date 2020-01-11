@@ -119,46 +119,54 @@ public class TextExtractor {
 
             List<Word> newList = tesseract.getWords(bufferedImage, RIL_TEXTLINE);
 
-            Pattern pattern = Pattern.compile("\\b\\S*\\d+");
+            Pattern amountAnywherePattern = Pattern.compile("\\b\\S*\\d+");
+            Pattern datePattern = Pattern.compile("\\b\\d{2}/\\d{2}/\\d{4}\\s\\d{2}:\\d{2}");
             String total = "";
+            String date = "";
             for (Word word : newList) {
                 if (word.getText().toLowerCase().contains("subtotaal")) {
-                    Matcher matcher = pattern.matcher(word.getText());
+                    Matcher matcher = amountAnywherePattern.matcher(word.getText());
                     if (matcher.find()) {
                         total = matcher.group();
                     }
 //                    System.out.println(word.getText());
                 } else if (word.getText().toLowerCase().contains("summe")) {
-                    Matcher matcher = pattern.matcher(word.getText());
+                    Matcher matcher = amountAnywherePattern.matcher(word.getText());
                     if (matcher.find()) {
                         total = matcher.group();
                     }
 //                    System.out.println(word.getText());
+                } else {
+                    Matcher dateMatcher = datePattern.matcher(word.getText());
+                    if (dateMatcher.find()) {
+                        date = dateMatcher.group();
+                    }
                 }
             }
 
             int goodsColumnWidth = headerRectangle.x - footerRectangle.x;
-            return new TextKeyBlocks(listRect, goodsColumnWidth, total);
+            return new TextKeyBlocks(listRect, goodsColumnWidth, total, date);
         }
 
         return null;
     }
 
-    private String textToJson(String text, String total) {
+    private String textToJson(String text, String total, String date) {
         String[] lines = text.split("\\r?\\n");
 
-        Pattern pattern = Pattern.compile("\\b\\S*\\d+$");
+        Pattern amountInTheEndOfLinePattern = Pattern.compile("\\b\\S*\\d+$");
         total = total.replace(',', '.');
 
         boolean firstLine = true;
         StringBuilder builder = new StringBuilder();
         builder.append("{\n");
+        builder.append("  \"date\": ").append("\"").append(date).append("\",\n");
         builder.append("  \"total\": ").append("\"").append(total).append("\",\n");
         builder.append("  \"products\": [\n");
         int noMatchesCount = 0;
         String lastName = "";
         for (String line : lines) {
-            Matcher matcher = pattern.matcher(line);
+            Matcher matcher = amountInTheEndOfLinePattern.matcher(line);
             if (matcher.find()) {
                 String price = matcher.group();
                 String name = line.substring(0, matcher.start() - 1);
@@ -209,7 +217,7 @@ public class TextExtractor {
             if (keyBlocks != null) {
 //                System.out.println("=====================  LIST =========================");
                 String fullText = recognizeCutBlock(tesseract, image, keyBlocks.listRect);
-                return textToJson(fullText, keyBlocks.total);
+                return textToJson(fullText, keyBlocks.total, keyBlocks.date);
 //                System.out.println("=====================  GOODS =========================");
 //                Rect goods = new Rect(keyBlocks.listRect.x, keyBlocks.listRect.y, keyBlocks.goodsColumnWidth, keyBlocks.listRect.height);
 //                String goodsText = recognizeCutBlock(tesseract, image, goods);

@@ -11,9 +11,22 @@ repositories {
     mavenCentral()
 }
 
+task buildZip(type: Zip) {
+    from compileJava
+    from processResources
+    into('lib') {
+        from configurations.runtimeClasspath
+    }
+}
+
+build.dependsOn buildZip
+
 dependencies {
-    compile fileTree(dir: 'lib', include: ['*.jar'])
+    compile fileTree(dir: 'lib', include: ['*.jar', '*.so'])
     compile group: 'net.sourceforge.tess4j', name: 'tess4j', version: '4.5.0'
+    compile 'com.amazonaws:aws-lambda-java-core:1.2.0'
+    compile 'com.amazonaws:aws-lambda-java-events:2.2.7'
+
 
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }
