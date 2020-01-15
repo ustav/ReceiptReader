@@ -5,8 +5,6 @@ plugins {
 group 'demo'
 version '1.0-SNAPSHOT'
 
-//sourceCompatibility = 1.8
-
 repositories {
     mavenCentral()
 }
@@ -22,7 +20,7 @@ task buildZip(type: Zip) {
 build.dependsOn buildZip
 
 dependencies {
-    compile fileTree(dir: 'lib', include: ['*.jar', '*.so'])
+    compile fileTree(dir: 'lib', include: ['*.jar'])
     compile group: 'net.sourceforge.tess4j', name: 'tess4j', version: '4.5.0'
     compile 'com.amazonaws:aws-lambda-java-core:1.2.0'
     compile 'com.amazonaws:aws-lambda-java-events:2.2.7'
