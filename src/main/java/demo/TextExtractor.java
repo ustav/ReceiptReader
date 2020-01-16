@@ -201,7 +201,7 @@ public class TextExtractor {
             firstLine = false;
         }
 
-        builder.append("\n").append("  ]\n").append("}\n");
+        builder.append("\n").append("  ]\n").append("}");
         return builder.toString();
     }
 
