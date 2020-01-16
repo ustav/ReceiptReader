@@ -3,13 +3,13 @@ package demo;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
+import org.opencv.highgui.HighGui;
 
 import java.net.URL;
 
 import static org.opencv.core.Core.*;
 import static org.opencv.core.CvType.CV_8UC1;
-import static org.opencv.highgui.HighGui.imshow;
-import static org.opencv.highgui.HighGui.resizeWindow;
+import static org.opencv.highgui.HighGui.*;
 import static org.opencv.imgcodecs.Imgcodecs.*;
 import static org.opencv.imgproc.Imgproc.*;
 
@@ -30,7 +30,7 @@ public class JumboReader {
 
     public String readReceipt(Mat input) {
 //        imshow("input", input.clone());
-//        resizeWindow("input", 1000, 1000);
+        resizeWindow("input", 1000, 1000);
         Mat preparedImage = new ImagePreparator().getPreparedImage(input);
 //        imshow("preparedImage", preparedImage.clone());
 //        resizeWindow("preparedImage", 1000, 1000);

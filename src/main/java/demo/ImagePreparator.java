@@ -8,6 +8,7 @@ import java.util.List;
 import static org.opencv.core.CvType.CV_8U;
 import static org.opencv.core.CvType.CV_8UC3;
 import static org.opencv.core.Mat.ones;
+import static org.opencv.highgui.HighGui.imshow;
 import static org.opencv.imgproc.Imgproc.*;
 
 public class ImagePreparator {
@@ -40,7 +41,7 @@ public class ImagePreparator {
 
         Mat canny = new Mat();
         Canny(blurred, canny, 50, 255);
-//        imshow("canny", canny);
+        imshow("canny", canny);
 
         Mat kernel = ones(3, 3, CV_8U);
         Mat closing = new Mat();

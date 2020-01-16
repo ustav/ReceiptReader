@@ -33,13 +33,13 @@ public class Main {
             System.out.println(result);
         } else {
             System.out.println("{ \"error\": \"No results found\" }");
-            return;
         }
 
         if (windows.size() > 0) {
             waitKey();
             destroyAllWindows();
         }
+
         System.exit(0);
     }
 }
