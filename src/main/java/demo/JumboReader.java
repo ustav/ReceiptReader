@@ -30,7 +30,7 @@ public class JumboReader {
 
     public String readReceipt(Mat input) {
 //        imshow("input", input.clone());
-        resizeWindow("input", 1000, 1000);
+//        resizeWindow("input", 1000, 1000);
         Mat preparedImage = new ImagePreparator().getPreparedImage(input);
 //        imshow("preparedImage", preparedImage.clone());
 //        resizeWindow("preparedImage", 1000, 1000);
