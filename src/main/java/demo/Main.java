@@ -10,7 +10,7 @@ public class Main {
 
     public static void main(String[] args) {
         System.loadLibrary("opencv_java420");
-        System.loadLibrary("lept");
+//        System.loadLibrary("lept");
 
         String filename;
         if (args != null && args.length > 0) {
