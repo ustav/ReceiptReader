@@ -11,7 +11,7 @@ for f in receipts/*.jpg ; do
     else 
       echo "," >> $OUTPUT
   fi
-  java -Djna.library.path="../lib" -Djava.library.path="../lib" -jar JumboReceiptReader.jar $f >> $OUTPUT
+  java -Djava.library.path="../lib" -jar JumboReceiptReader.jar $f >> $OUTPUT
 done
 echo "]" >> $OUTPUT
 echo "Written to $OUTPUT"
