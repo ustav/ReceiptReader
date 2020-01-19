@@ -43,9 +43,7 @@ public class TextExtractor {
 
     private String recognizeCutBlock(ITesseract tesseract, Mat image, Rect rect) throws TesseractException {
         Mat cutImage = new Mat(image, rect);
-//        imshow("cutImage" + rect.toString(), cutImage);
         Mat deskewed = deskewImage(cutImage);
-//        imshow("deskewed Image" + rect.toString(), deskewed);
 
         BufferedImage bufferedCutImage = (BufferedImage) toBufferedImage(deskewed);
         tesseract.setPageSegMode(PSM_SINGLE_BLOCK);
@@ -55,9 +53,7 @@ public class TextExtractor {
     private double getSkewAngle(Mat image) {
         BufferedImage bufferedImage = (BufferedImage) toBufferedImage(image);
         ImageDeskew deskew = new ImageDeskew(bufferedImage);
-        double angle = deskew.getSkewAngle();
-//        System.out.println("Skew Angle: " + angle);
-        return angle;
+        return deskew.getSkewAngle();
     }
 
     private Mat deskewImage(Mat image) {
@@ -120,7 +116,11 @@ public class TextExtractor {
             List<Word> newList = tesseract.getWords(bufferedImage, RIL_TEXTLINE);
 
             Pattern amountAnywherePattern = Pattern.compile("\\b\\S*\\d+");
-            Pattern datePattern = Pattern.compile("\\b\\d{2}/\\d{2}/\\d{4}\\s\\d{2}:\\d{2}");
+            // 02/02/2020 09:37
+//            Pattern datePattern = Pattern.compile("\\b\\d{2}/\\d{2}/\\d{4}\\s\\d{2}:\\d{2}");
+            // 09:37:13 02Jan2020
+            Pattern datePattern = Pattern.compile("\\b\\d{2}:\\d{2}:\\d{2}\\s+\\d{2}\\w{3}\\d{4}");
+
             String total = "";
             String date = "";
             for (Word word : newList) {
@@ -129,13 +129,11 @@ public class TextExtractor {
                     if (matcher.find()) {
                         total = matcher.group();
                     }
-//                    System.out.println(word.getText());
                 } else if (word.getText().toLowerCase().contains("summe")) {
                     Matcher matcher = amountAnywherePattern.matcher(word.getText());
                     if (matcher.find()) {
                         total = matcher.group();
                     }
-//                    System.out.println(word.getText());
                 } else {
                     Matcher dateMatcher = datePattern.matcher(word.getText());
                     if (dateMatcher.find()) {
@@ -174,9 +172,6 @@ public class TextExtractor {
                 price = price.replace(';', '.');
                 price = price.replace(':', '.');
 
-//                System.out.println(line + ", price: " + price);
-//                System.out.println("name: " + name);
-
                 if (noMatchesCount == 2) {
                     name = lastName;
                 }
@@ -194,8 +189,6 @@ public class TextExtractor {
                 if (noMatchesCount == 0) {
                     lastName = line;
                 }
-
-//                System.out.println("No matches");
                 noMatchesCount++;
             }
             firstLine = false;

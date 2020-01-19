@@ -14,6 +14,8 @@ import static java.lang.Math.atan2;
 import static org.opencv.calib3d.Calib3d.RANSAC;
 import static org.opencv.core.Core.perspectiveTransform;
 import static org.opencv.features2d.Features2d.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS;
+import static org.opencv.highgui.HighGui.imshow;
+import static org.opencv.highgui.HighGui.resizeWindow;
 import static org.opencv.imgproc.Imgproc.line;
 
 public class FeatureDetector {
@@ -128,6 +130,16 @@ public class FeatureDetector {
         return sceneCorners;
     }
 
+    private void drawGoodMatches(Mat object, Mat scene, MatchResult matchResult, float[] sceneCornersData) {
+        Mat imageWithMatches = new Mat();
+        drawMatches(object, scene, imageWithMatches,  matchResult);
+        drawObjectOutline(imageWithMatches, sceneCornersData, object.cols());
+
+        //-- Show detected matches
+        imshow("Good Matches", imageWithMatches);
+        resizeWindow("Good Matches", 1000, 1000);
+    }
+
     public FeatureDetectionResult matchFeatures(Mat object, Mat scene) {
         MatchResult matchResult = findMatches(object, scene);
         Mat homography = findHomography(matchResult);
@@ -141,16 +153,8 @@ public class FeatureDetector {
         sceneCorners.get(0, 0, sceneCornersData);
 
         double angle = calculateAngleBetweenVectors(getVectorFromCornersData(objectCornersData), getVectorFromCornersData(sceneCornersData));
-//        System.out.println("angle: " + angle);
 
-        Mat imageWithMatches = new Mat();
-        drawMatches(object, scene, imageWithMatches,  matchResult);
-        drawObjectOutline(imageWithMatches, sceneCornersData, object.cols());
-
-
-        //-- Show detected matches
-//        HighGui.imshow("Good Matches", imageWithMatches);
-//        resizeWindow("Good Matches", 1000, 1000);
+//        drawGoodMatches(object, scene, matchResult, sceneCornersData);
 
         return new FeatureDetectionResult(!matchResult.matches.isEmpty(), angle);
     }

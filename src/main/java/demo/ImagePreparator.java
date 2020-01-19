@@ -31,21 +31,16 @@ public class ImagePreparator {
 
         Mat gray = new Mat();
         cvtColor(resized, gray, COLOR_BGR2GRAY);
-//        imshow("gray", gray);
-
 
         Mat blurred = new Mat();
         GaussianBlur(gray, blurred, new Size(5, 5), 0);
-//        imshow("blurred", blurred);
 
         Mat canny = new Mat();
         Canny(blurred, canny, 50, 255);
-//        imshow("canny", canny);
 
         Mat kernel = ones(3, 3, CV_8U);
         Mat closing = new Mat();
         morphologyEx(canny, closing, MORPH_DILATE, kernel);
-//        imshow("closing", closing);
 
         return closing;
     }
@@ -145,17 +140,13 @@ public class ImagePreparator {
             Mat transformationMatrix = getPerspectiveTransform(quad, square);
             Mat transformed = Mat.zeros(image.rows(), image.cols(), CV_8UC3);
 
-//            imshow("transformed", transformed);
             warpPerspective(image, transformed, transformationMatrix, image.size());
 
             drawPolygon(image, contourPoints);
             drawRect(image, boundRect);
             drawRect(transformed, boundRect);
 
-            Mat cropped = new Mat(transformed, boundRect);
-//            imshow("cropped", cropped);
-
-            return cropped;
+            return new Mat(transformed, boundRect);
         }
 
         return image;

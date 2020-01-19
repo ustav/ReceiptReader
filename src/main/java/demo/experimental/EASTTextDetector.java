@@ -1,4 +1,4 @@
-package demo;
+package demo.experimental;
 
 import org.opencv.core.*;
 import org.opencv.dnn.Dnn;
@@ -23,10 +23,10 @@ public class EASTTextDetector {
         Mat frame = Imgcodecs.imread("pics/receipt5.jpg", Imgcodecs.IMREAD_REDUCED_COLOR_4);
         Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGBA2RGB);
 
-        Size siz = new Size(320, 320);
-        int W = (int) (siz.width / 4); // width of the output geometry  / score maps
-        int H = (int) (siz.height / 4); // height of those. the geometry has 4, vertically stacked maps, the score one 1
-        Mat blob = Dnn.blobFromImage(frame, 1.0, siz, new Scalar(123.68, 116.78, 103.94), true, false);
+        Size size = new Size(320, 320);
+        int W = (int) (size.width / 4); // width of the output geometry  / score maps
+        int H = (int) (size.height / 4); // height of those. the geometry has 4, vertically stacked maps, the score one 1
+        Mat blob = Dnn.blobFromImage(frame, 1.0, size, new Scalar(123.68, 116.78, 103.94), true, false);
         net.setInput(blob);
         List<Mat> outs = new ArrayList<>(2);
         List<String> outNames = new ArrayList<String>();
@@ -49,10 +49,10 @@ public class EASTTextDetector {
         Dnn.NMSBoxesRotated(boxes, confidences, scoreThresh, nmsThresh, indices);
 
         // Render detections
-        Point ratio = new Point((float) frame.cols() / siz.width, (float) frame.rows() / siz.height);
+        Point ratio = new Point((float) frame.cols() / size.width, (float) frame.rows() / size.height);
         int[] indexes = indices.toArray();
-        for (int i = 0; i < indexes.length; ++i) {
-            RotatedRect rot = boxesArray[indexes[i]];
+        for (int index : indexes) {
+            RotatedRect rot = boxesArray[index];
             Point[] vertices = new Point[4];
             rot.points(vertices);
             for (int j = 0; j < 4; ++j) {

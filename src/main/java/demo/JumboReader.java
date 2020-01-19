@@ -1,17 +1,10 @@
 package demo;
 
 import org.opencv.core.Mat;
-import org.opencv.core.Point;
-import org.opencv.core.Scalar;
-import org.opencv.highgui.HighGui;
-
-import java.net.URL;
 
 import static org.opencv.core.Core.*;
-import static org.opencv.core.CvType.CV_8UC1;
-import static org.opencv.highgui.HighGui.*;
-import static org.opencv.imgcodecs.Imgcodecs.*;
-import static org.opencv.imgproc.Imgproc.*;
+import static org.opencv.imgcodecs.Imgcodecs.IMREAD_GRAYSCALE;
+import static org.opencv.imgcodecs.Imgcodecs.imread;
 
 public class JumboReader {
 
@@ -29,17 +22,9 @@ public class JumboReader {
     }
 
     public String readReceipt(Mat input) {
-//        imshow("input", input.clone());
-//        resizeWindow("input", 1000, 1000);
         Mat preparedImage = new ImagePreparator().getPreparedImage(input);
-//        imshow("preparedImage", preparedImage.clone());
-//        resizeWindow("preparedImage", 1000, 1000);
-
         String logoFilename = "data/jumbo_logo.jpg";
-
         Mat logo = imread(logoFilename, IMREAD_GRAYSCALE);
-////        imshow("logo", logo);
-
         if (logo.empty()) {
             return "{ \"error\": \"Logo not found\" }";
         }
@@ -48,13 +33,7 @@ public class JumboReader {
 
         if (result.matchFound) {
             Mat rotated = rotateImageIfNeeded(preparedImage, result.angle);
-            String text = new TextExtractor().extractText(rotated);
-
-//            System.out.println(text);
-
-//            imshow("rotated", rotated);
-//            resizeWindow("rotated", 1200, 1200);
-            return text;
+            return new TextExtractor().extractText(rotated);
         }
 
         return "{ \"error\": \"No results found\" }";
