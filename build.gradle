@@ -14,6 +14,7 @@ task buildZip(type: Zip) {
     from processResources
     into('lib') {
         from configurations.runtimeClasspath
+        from ('lib/libopencv_java420.so')
     }
 }
 
