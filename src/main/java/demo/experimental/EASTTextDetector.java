@@ -110,4 +110,3 @@ public class EASTTextDetector {
         return detections;
     }
 }
-
